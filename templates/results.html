@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='results.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Voting Results</h1>
+        <p>Total Votes: {{ total_votes }}</p>
+        <ul>
+            {% if total_votes > 0 %}
+                {% for candidate, votes in votes.items() | sort(attribute='1', reverse=True) %}
+                    {% set percentage = (votes / total_votes) * 100 %}
+                    <li><b>{{ candidate }}</b>: {{ votes }} votes ({{ '%.1f' % percentage }}%)</li>
+                {% endfor %}
+            {% else %}
+                {% for candidate, votes in votes.items() %}
+                    <li><b>{{ candidate }}</b>: {{ votes }} votes</li>
+                {% endfor %}
+            {% endif %}
+        </ul>
+        <form action="{{ url_for('save_results') }}" method="post">
+            <button type="submit">Save Results to CSV</button>
+        </form>
+        <form action="{{ url_for('home') }}" method="get">
+            <button type="submit">Reset and Return to Home</button>
+        </form>
+    </div>
+</body>
+</html>

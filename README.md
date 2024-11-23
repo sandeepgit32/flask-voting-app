@@ -9,11 +9,6 @@ This is a simple voting application built with Flask. It allows users to vote fo
 - **Results**: Display the total number of votes and the percentage of votes each candidate received.
 - **Save Results**: Admin can save the voting results to a CSV file.
 
-## Project Structure
-
-. ├── pycache/ ├── .env ├── app.py ├── candidate_list.txt ├── requirements.txt ├── static/ │ ├── results.css │ ├── scripts.js │ └── styles.css ├── templates/ │ ├── enter_passcode.html │ ├── index.html │ ├── results.html │ ├── thank_you.html │ └── vote.html ├── venv/ │ ├── bin/ │ ├── include/ │ ├── lib/ │ ├── lib64 │ ├── pyvenv.cfg │ └── share/ ├── voter_list.txt └── voting_results.csv
-
-
 ## Setup
 
 1. **Clone the repository**:

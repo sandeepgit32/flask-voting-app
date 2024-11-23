@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting Page</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <!-- Voting Container -->
+    <div class="container">
+        <h1>Cast Your Vote</h1>
+        <h2>Total Votes Cast: {{ total_votes_cast }} / {{ total_voters }}</h2>  <!-- Vote Counter -->
+
+        <!-- Voting Form -->
+        <form action="/vote" method="POST">
+            <label for="voter_id">Enter Your Voter ID:</label>
+            <input type="text" id="voter_id" name="voter_id" required>
+
+            <h2>Choose Candidates</h2>
+            <div class="candidates">
+                {% for candidate in candidates %}
+                <label class="card">
+                    <input type="radio" name="candidate" value="{{ candidate.name }}" required>
+                    <div class="card-content">
+                        <h3>{{ candidate.name }}</h3>
+                        <p>{{ candidate.party }}</p>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+            <button type="submit">Cast Your Vote</button> <!-- Larger green button -->
+        </form>
+
+        <nav>
+            <button onclick="resetVote()">Reset Voting (Requires Passcode)</button>
+            <button onclick="closeVote()">Close Voting (Requires Passcode)</button>
+        </nav>
+    </div>
+
+    <!-- JavaScript for Reset and Close Voting actions -->
+    <script>
+        function resetVote() {
+            if (confirm("Are you sure you want to reset the vote? This action cannot be undone.")) {
+                const passcode = prompt("Enter the admin passcode to close voting:");
+                if (passcode) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/reset';
+                    const input = document.createElement('input');
+                    input.type = 'password';
+                    input.name = 'passcode';
+                    input.value = passcode;
+                    form.appendChild(input);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            }
+        }
+
+        function closeVote() {
+            if (confirm("Are you sure you want to close the voting?")) {
+                const passcode = prompt("Enter the admin passcode to close voting:");
+                if (passcode) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/close';
+                    const input = document.createElement('input');
+                    input.type = 'password';
+                    input.name = 'passcode';
+                    input.value = passcode;
+                    form.appendChild(input);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

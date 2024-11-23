@@ -1,0 +1,8 @@
+Party-A,Candidate-1
+Party-B,Candidate-2
+Party-C,Candidate-3
+Party-D,Candidate-4
+Party-E,Candidate-5
+Party-F,Candidate-6
+Party-G,Candidate-7
+Party-H,Candidate-8
