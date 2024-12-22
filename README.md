@@ -23,22 +23,28 @@ This is a simple voting application built with Flask. It allows users to vote fo
     source venv/bin/activate  # On Windows use `venv\Scripts\activate`
     ```
 
-3. **Install dependencies**:
+3. **Change directory**
+    ```sh
+    cd src
+    ```
+
+4. **Install dependencies**:
     ```sh
     pip install -r requirements.txt
     ```
 
-4. **Create a `.env` file** in the root directory and add the following:
+5. **Create a `.env` file** in the root directory and add the following:
     ```
+    FLASK_APP='app.py'
     SECRET_KEY=your_secret_key
     ADMIN_PASSCODE=your_admin_passcode
     ```
 
-5. **Prepare candidate and voter lists**:
+6. **Prepare candidate and voter lists**:
     - `candidate_list.txt`: List of candidates in the format `name,party`.
     - `voter_list.txt`: List of voter IDs.
 
-## Running the Application
+## Running the application in local
 
 1. **Run the application**:
     ```sh
@@ -46,7 +52,20 @@ This is a simple voting application built with Flask. It allows users to vote fo
     ```
 
 2. **Open the application**:
-    Open your web browser and go to `http://127.0.0.1:5000`.
+    Open your web browser and go to `http://127.0.0.1:5000`
+
+## Running the application in docker
+
+1. **Build the docker image**:
+    ```sh
+    docker build -t flask-voting-app .
+    ```
+
+2. **Run the docker container**:
+    docker run --name voting-app -p 5000:5000 flask-voting-app
+
+3. **Open the application**:
+    Open your web browser and go to `http://127.0.0.1:5000`
 
 ## Usage
 

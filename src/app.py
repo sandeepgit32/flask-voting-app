@@ -5,6 +5,11 @@ from flask import Flask, render_template, request, redirect, url_for, flash, sen
 # Load environment variables from .env file
 load_dotenv()
 
+# Constants
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CANDIDATE_FILE = os.path.join(BASE_DIR, 'candidate_list.txt')
+VOTER_FILE = os.path.join(BASE_DIR, 'voter_list.txt')
+RESULTS_FILE = os.path.join(BASE_DIR, 'voting_results.csv')
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')
 admin_passcode = os.getenv('ADMIN_PASSCODE')
@@ -38,7 +43,7 @@ def initialize_candidates():
     global candidates, votes
     candidates.clear()
     votes.clear()
-    with open('candidate_list.txt') as f:
+    with open(CANDIDATE_FILE) as f:
         for line in f:
             name, party = line.strip().split(',')
             candidate = Candidate(name, party)
@@ -50,7 +55,7 @@ def initialize_candidates():
 def initialize_voters():
     global voters
     voters.clear()
-    with open('voter_list.txt') as f:
+    with open(VOTER_FILE) as f:
         voters.extend([Voter(line.strip()) for line in f])
 
 
@@ -157,8 +162,7 @@ def close_voting():
 
 @app.route('/save_results', methods=['POST'])
 def save_results():
-    filename = 'voting_results.csv'
-    with open(filename, 'w', newline='') as csvfile:
+    with open(RESULTS_FILE, 'w', newline='') as csvfile:
         fieldnames = ['Candidate', 'Party', 'Votes']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -168,7 +172,7 @@ def save_results():
                 'Party': candidate.party, 
                 'Votes': votes.get(candidate.name, 0)
             })
-    return send_file(filename, as_attachment=True)
+    return send_file(RESULTS_FILE, as_attachment=True)
 
 
 if __name__ == '__main__':

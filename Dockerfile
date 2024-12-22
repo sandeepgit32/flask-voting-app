@@ -1,13 +1,22 @@
 FROM python:3.9-slim
 
-EXPOSE 5000
-
+# Set the working directory in the container
 WORKDIR /app
 
-COPY requirements.txt requirements.txt
+# Copy the requirements file into the container
+COPY src/requirements.txt .
 
+# Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy the source code into the container
+COPY src/ .
 
+# Expose port 5000
+EXPOSE 5000
+
+# Make the run.sh file executable
+RUN chmod +x run.sh
+
+# Run the application
 ENTRYPOINT ["bash", "run.sh"]
