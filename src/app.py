@@ -8,7 +8,9 @@ from flask import Flask, render_template, request, redirect, url_for, flash, sen
 load_dotenv()
 
 # Connect to Redis
-redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
+redis_host = os.getenv('REDIS_HOST', 'localhost')
+redis_port = int(os.getenv('REDIS_PORT', 6379))
+redis_client = redis.StrictRedis(host=redis_host, port=redis_port, db=0)
 
 # Constants
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -18,7 +20,7 @@ RESULTS_FILE = os.path.join(BASE_DIR, 'voting_results.csv')
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')
 admin_passcode = os.getenv('ADMIN_PASSCODE')
-voting_open = False
+voting_open = "False"
 candidates = []
 voters = []
 votes = {}
@@ -55,7 +57,7 @@ def initialize_candidates():
             candidates.append(candidate)
             votes[candidate.name] = 0
     redis_client.set("candidates", pickle.dumps(candidates))
-    redis_client.set("votes", votes)
+    redis_client.set("votes", pickle.dumps(votes))
     redis_client.set("voting_open", voting_open)
 
 
@@ -70,17 +72,25 @@ def initialize_voters():
 
 
 def set_redis_data(key, value):
-    if (key == "candidates") or (key == "voters"):
+    if (key == "candidates") or (key == "voters") or (key == "votes"):
         redis_client.set(key, pickle.dumps(value))
     else:
         redis_client.set(key, value)
 
 
 def get_redis_data(key):
-    value = redis_client.get(key)
-    if (key == "candidates") or (key == "voters"):
-        return pickle.loads(value)
-    return value
+    try:
+        value = redis_client.get(key)
+        if value is None:
+            return None
+        if (key == "candidates") or (key == "voters") or (key == "votes"):
+            return pickle.loads(value)
+        elif key == "total_votes_cast":
+            return int(total_votes_cast)
+        return value
+    except redis.RedisError as e:
+        print(f"Redis error: {e}")
+        return None
 
 
 # Check if the voter is valid
@@ -92,7 +102,7 @@ def is_valid_voter(voter_id):
 def home():
     global voting_open
     voting_open = get_redis_data("voting_open")
-    if voting_open:
+    if voting_open == "True":
         return redirect(url_for('vote'))
     
     if request.method == 'POST':
@@ -114,7 +124,7 @@ def vote():
     voting_open = get_redis_data("voting_open")
     total_votes_cast = get_redis_data("total_votes_cast")
     voters = get_redis_data("voters")
-    if not voting_open:
+    if voting_open == "False":
         flash("Voting is not open yet. Please wait for the admin to open voting.", 'error')
         return redirect(url_for('home'))
 
@@ -154,7 +164,7 @@ def thank_you():
 def results():
     global voting_open
     voting_open = get_redis_data("voting_open")
-    if voting_open:
+    if voting_open == "True":
         return redirect(url_for('vote'))
     if request.method == 'POST':
         passcode = request.form['passcode']
@@ -188,7 +198,7 @@ def close_voting():
     passcode = request.form.get('passcode')
     if passcode == admin_passcode:
         global voting_open
-        voting_open = False
+        voting_open = "False"
         set_redis_data("voting_open", voting_open)
         return redirect(url_for('results'))
     else:
