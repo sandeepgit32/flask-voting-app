@@ -1,9 +1,14 @@
 import os, csv
+import redis
+import pickle
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Connect to Redis
+redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 # Constants
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -49,6 +54,9 @@ def initialize_candidates():
             candidate = Candidate(name, party)
             candidates.append(candidate)
             votes[candidate.name] = 0
+    redis_client.set("candidates", pickle.dumps(candidates))
+    redis_client.set("votes", votes)
+    redis_client.set("voting_open", voting_open)
 
 
 # Initialize voters from file
@@ -57,6 +65,22 @@ def initialize_voters():
     voters.clear()
     with open(VOTER_FILE) as f:
         voters.extend([Voter(line.strip()) for line in f])
+    redis_client.set("voters", pickle.dumps(voters))
+    redis_client.set("total_votes_cast", total_votes_cast)
+
+
+def set_redis_data(key, value):
+    if (key == "candidates") or (key == "voters"):
+        redis_client.set(key, pickle.dumps(value))
+    else:
+        redis_client.set(key, value)
+
+
+def get_redis_data(key):
+    value = redis_client.get(key)
+    if (key == "candidates") or (key == "voters"):
+        return pickle.loads(value)
+    return value
 
 
 # Check if the voter is valid
@@ -67,6 +91,7 @@ def is_valid_voter(voter_id):
 @app.route('/', methods=['GET', 'POST'])
 def home():
     global voting_open
+    voting_open = get_redis_data("voting_open")
     if voting_open:
         return redirect(url_for('vote'))
     
@@ -76,6 +101,7 @@ def home():
             voting_open = True  # Admin opens the voting
             global total_votes_cast
             total_votes_cast = 0
+            set_redis_data("total_votes_cast", total_votes_cast)
             return redirect(url_for('vote'))
         else:
             flash("Invalid passcode.", 'error')
@@ -85,6 +111,9 @@ def home():
 @app.route('/vote', methods=['GET', 'POST'])
 def vote():
     global voting_open, total_votes_cast
+    voting_open = get_redis_data("voting_open")
+    total_votes_cast = get_redis_data("total_votes_cast")
+    voters = get_redis_data("voters")
     if not voting_open:
         flash("Voting is not open yet. Please wait for the admin to open voting.", 'error')
         return redirect(url_for('home'))
@@ -105,6 +134,9 @@ def vote():
             votes[selected_candidate] += 1
             voter.has_voted = True
             total_votes_cast += 1  # Increment vote counter
+            set_redis_data("votes", votes)
+            set_redis_data("voters", voters)
+            set_redis_data("total_votes_cast", total_votes_cast)
             return redirect(url_for('thank_you', message="Thank you for voting!"))
         else:
             flash("Please select a candidate.", 'error')
@@ -120,6 +152,8 @@ def thank_you():
 
 @app.route('/results', methods=['GET', 'POST'])
 def results():
+    global voting_open
+    voting_open = get_redis_data("voting_open")
     if voting_open:
         return redirect(url_for('vote'))
     if request.method == 'POST':
@@ -141,6 +175,7 @@ def reset_ballot():
         initialize_voters()
         global total_votes_cast
         total_votes_cast = 0
+        set_redis_data("total_votes_cast", total_votes_cast)
         flash("The ballot has been reset.", 'success')
         return redirect(url_for('vote'))
     else:
@@ -154,6 +189,7 @@ def close_voting():
     if passcode == admin_passcode:
         global voting_open
         voting_open = False
+        set_redis_data("voting_open", voting_open)
         return redirect(url_for('results'))
     else:
         flash("Invalid passcode.", 'error')
@@ -166,6 +202,9 @@ def save_results():
         fieldnames = ['Candidate', 'Party', 'Votes']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
+        global candidates, votes
+        candidates = get_redis_data("candidates")
+        votes = get_redis_data("votes")
         for candidate in candidates:
             writer.writerow({
                 'Candidate': candidate.name, 
