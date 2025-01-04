@@ -104,13 +104,6 @@ This is a simple voting application built with Flask. It allows users to vote fo
     kubectl delete namespace dev
     ```
 
-## Usage
-
-- **Admin Login**: Enter the admin passcode to open the voting process.
-- **Voting**: Users can vote by entering their voter ID and selecting a candidate.
-- **Results**: View the results after closing the voting process.
-- **Save Results**: Admin can save the results to a CSV file.
-
 ## License
 
 This project is licensed under the MIT License.
