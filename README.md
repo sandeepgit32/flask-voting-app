@@ -38,6 +38,8 @@ This is a simple voting application built with Flask. It allows users to vote fo
     FLASK_APP='app.py'
     SECRET_KEY=your_secret_key
     ADMIN_PASSCODE=your_admin_passcode
+    REDIS_HOST='redis'
+    REDIS_PORT='6379'
     ```
 
 6. **Prepare candidate and voter lists**:
@@ -54,18 +56,53 @@ This is a simple voting application built with Flask. It allows users to vote fo
 2. **Open the application**:
     Open your web browser and go to `http://127.0.0.1:5000`
 
-## Running the application in docker
+## Running the application in Docker
 
-1. **Build the docker image**:
-    ```sh
-    docker build -t flask-voting-app .
-    ```
-
-2. **Run the docker container**:
-    docker run --name voting-app -p 5000:5000 flask-voting-app
+1. **Run the docker compose file**:
+    docker compose up --build
 
 3. **Open the application**:
     Open your web browser and go to `http://127.0.0.1:5000`
+
+## Running the application in Minikube
+
+1. **Start mMinikube cluster**
+    ```sh
+    minikube start
+    ```
+2. **Load the docker image into minikube**
+    ```sh
+    docker build -t flask-voting-app-web:<tag> .
+    minikube image load flask-voting-app-web:<tag>
+    ```
+
+3. **Run the Kubernetes manifests**
+    ```sh
+    kubectl apply -f k8s/dev/namespace.yaml
+    kubectl apply -f k8s/dev/configmap.yaml
+    kubectl apply -f k8s/dev/secret.yaml
+    kubectl apply -f k8s/dev/persistent-volume.yaml
+    kubectl apply -f k8s/dev/deployment.yaml
+    kubectl apply -f k8s/dev/service.yaml
+    ```
+4. **Get the minikube ip**
+
+    ```sh
+    minikube ip
+    ```
+
+5. **Open the application**:
+    Open your web browser and go to `http://<minikube-ip>:30000`
+
+6. **Monitor Minikube cluster dashboard**
+    ```sh
+    minikube dashboard
+    ```
+
+7. **To delete all resources run**
+    ```sh
+    kubectl delete namespace dev
+    ```
 
 ## Usage
 

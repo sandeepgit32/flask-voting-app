@@ -101,6 +101,8 @@ def home():
     if request.method == 'POST':
         passcode = request.form['passcode']
         if passcode == admin_passcode:
+            initialize_candidates()
+            initialize_voters()
             voting_open = "True"  # Admin opens the voting
             total_votes_cast = 0
             set_redis_data("voting_open", voting_open)
