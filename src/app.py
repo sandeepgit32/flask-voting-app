@@ -20,11 +20,6 @@ RESULTS_FILE = os.path.join(BASE_DIR, 'voting_results.csv')
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')
 admin_passcode = os.getenv('ADMIN_PASSCODE')
-voting_open = "False"
-candidates = []
-voters = []
-votes = {}
-total_votes_cast = 0
 
 
 class Candidate:
@@ -47,28 +42,26 @@ class Voter:
 
 # Initialize candidates from file
 def initialize_candidates():
-    global candidates, votes
-    candidates.clear()
-    votes.clear()
+    candidates = []
+    votes = {}
     with open(CANDIDATE_FILE) as f:
         for line in f:
-            name, party = line.strip().split(',')
+            name, party = line.strip().split(",")
             candidate = Candidate(name, party)
             candidates.append(candidate)
             votes[candidate.name] = 0
     redis_client.set("candidates", pickle.dumps(candidates))
     redis_client.set("votes", pickle.dumps(votes))
-    redis_client.set("voting_open", voting_open)
+    redis_client.set("voting_open", "False")
 
 
 # Initialize voters from file
 def initialize_voters():
-    global voters
-    voters.clear()
+    voters = []
     with open(VOTER_FILE) as f:
         voters.extend([Voter(line.strip()) for line in f])
     redis_client.set("voters", pickle.dumps(voters))
-    redis_client.set("total_votes_cast", total_votes_cast)
+    redis_client.set("total_votes_cast", 0)
 
 
 def set_redis_data(key, value):
@@ -86,7 +79,7 @@ def get_redis_data(key):
         if (key == "candidates") or (key == "voters") or (key == "votes"):
             return pickle.loads(value)
         elif key == "total_votes_cast":
-            return int(total_votes_cast)
+            return int(value)
         return value
     except redis.RedisError as e:
         print(f"Redis error: {e}")
@@ -95,12 +88,12 @@ def get_redis_data(key):
 
 # Check if the voter is valid
 def is_valid_voter(voter_id):
+    voters = get_redis_data("voters")
     return any(voter.id == voter_id for voter in voters)
 
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
-    global voting_open
     voting_open = get_redis_data("voting_open")
     if voting_open == "True":
         return redirect(url_for('vote'))
@@ -108,9 +101,9 @@ def home():
     if request.method == 'POST':
         passcode = request.form['passcode']
         if passcode == admin_passcode:
-            voting_open = True  # Admin opens the voting
-            global total_votes_cast
+            voting_open = "True"  # Admin opens the voting
             total_votes_cast = 0
+            set_redis_data("voting_open", voting_open)
             set_redis_data("total_votes_cast", total_votes_cast)
             return redirect(url_for('vote'))
         else:
@@ -120,10 +113,10 @@ def home():
 
 @app.route('/vote', methods=['GET', 'POST'])
 def vote():
-    global voting_open, total_votes_cast
     voting_open = get_redis_data("voting_open")
     total_votes_cast = get_redis_data("total_votes_cast")
     voters = get_redis_data("voters")
+    candidates = get_redis_data("candidates")
     if voting_open == "False":
         flash("Voting is not open yet. Please wait for the admin to open voting.", 'error')
         return redirect(url_for('home'))
@@ -141,6 +134,7 @@ def vote():
 
         selected_candidate = request.form.get('candidate')
         if selected_candidate:
+            votes = get_redis_data("votes")
             votes[selected_candidate] += 1
             voter.has_voted = True
             total_votes_cast += 1  # Increment vote counter
@@ -151,7 +145,12 @@ def vote():
         else:
             flash("Please select a candidate.", 'error')
 
-    return render_template('vote.html', candidates=candidates, total_votes_cast=total_votes_cast, total_voters=len(voters))
+    return render_template(
+        'vote.html', 
+        candidates=candidates, 
+        total_votes_cast=total_votes_cast, 
+        total_voters=len(voters)
+    )
 
 
 @app.route('/thank_you')
@@ -162,13 +161,13 @@ def thank_you():
 
 @app.route('/results', methods=['GET', 'POST'])
 def results():
-    global voting_open
     voting_open = get_redis_data("voting_open")
     if voting_open == "True":
         return redirect(url_for('vote'))
     if request.method == 'POST':
         passcode = request.form['passcode']
         if passcode == admin_passcode:
+            votes = get_redis_data("votes")
             total_votes = sum(votes.values())
             return render_template('results.html', votes=votes, total_votes=total_votes)
         else:
@@ -183,7 +182,6 @@ def reset_ballot():
     if passcode == admin_passcode:
         initialize_candidates()
         initialize_voters()
-        global total_votes_cast
         total_votes_cast = 0
         set_redis_data("total_votes_cast", total_votes_cast)
         flash("The ballot has been reset.", 'success')
@@ -197,7 +195,6 @@ def reset_ballot():
 def close_voting():
     passcode = request.form.get('passcode')
     if passcode == admin_passcode:
-        global voting_open
         voting_open = "False"
         set_redis_data("voting_open", voting_open)
         return redirect(url_for('results'))
@@ -212,7 +209,6 @@ def save_results():
         fieldnames = ['Candidate', 'Party', 'Votes']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-        global candidates, votes
         candidates = get_redis_data("candidates")
         votes = get_redis_data("votes")
         for candidate in candidates:
