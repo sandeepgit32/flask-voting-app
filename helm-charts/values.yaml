@@ -1,0 +1,55 @@
+nameOverride: ""
+fullnameOverride: ""
+
+namespace: dev
+
+flaskApp:
+  name: flask-app
+  replicaCount: 2
+  image:
+    repository: flask-voting-app-web
+    tag: v1
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort
+    port: 80
+    targetPort: 5000
+    nodePort: 30000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+redis:
+  name: redis
+  replicaCount: 1
+  image:
+    repository: redis
+    tag: 7.0-alpine
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 6379
+  persistence:
+    size: 100Mi
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+config:
+  flaskApp: app.py
+  flaskEnv: development
+  redisHost: redis-service
+  redisPort: "6379"
+
+secrets:
+  secretKey: YV9zZWNyZXRfa2V5
+  adminPasscode: MTIzNDU2
