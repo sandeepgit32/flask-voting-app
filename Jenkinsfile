@@ -3,7 +3,9 @@ pipeline{
 	agent any
 
 	environment {
-		DOCKERHUB_CREDENTIALS=credentials('DockerHub_credentials')
+		DOCKER_IMAGE_NAME='flask-voting-app-web'
+		K8S_NAMESPACE='dev'
+		HELM_RELEASE_NAME='flask-voting-app'
 	}
 
 	stages {
@@ -26,29 +28,42 @@ pipeline{
 
 		stage('Build') {
 			steps {
-				sh 'docker build -t sandeepdh32/flask-voting-app:$BUILD_NUMBER .'
+				sh "docker build -t ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} ."
 			}
 		}
 
-		stage('Login') {
-			steps {
-				sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-			}
-		}
+		stage('Load Docker Image to Minikube') {
+            steps {
+                script {
+                    echo "Loading Docker image into Minikube..."
+                    sh "minikube image load ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}"
+                }
+            }
+        }
 
-		stage('Push') {
-			steps {
-				sh 'docker push sandeepdh32/flask-voting-app:$BUILD_NUMBER'
-			}
-		}
+		stage('Deploy to Minikube with Helm') {
+            steps {
+                script {
+                    echo "Deploying to Minikube using Helm..."
+                    sh """
+                        helm upgrade --install ${HELM_RELEASE_NAME} ./helm-charts \
+						--values helm-charts/values-${K8S_NAMESPACE}.yaml
+                        --set flaskApp.image.repository=${DOCKER_IMAGE_NAME} \
+                        --set flaskApp.image.tag=${BUILD_NUMBER} \
+                        --namespace ${K8S_NAMESPACE} \
+                        --create-namespace
+                    """
+                }
+            }
+        }
 	}
 
 	post {
-		always {
-			sh 'docker logout'
+		success {
+			echo 'Pipeline completed successfully!'
 		}
 		failure {
-            echo 'Pipeline failed'
+            echo 'Pipeline failed. Please check the logs.'
         }
 	}
 
