@@ -1,8 +1,6 @@
 nameOverride: ""
 fullnameOverride: ""
 
-namespace: dev
-
 flaskApp:
   name: flask-app
   replicaCount: 2

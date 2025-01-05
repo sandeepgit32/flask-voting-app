@@ -2,11 +2,10 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-config
-  namespace: {{ .Values.namespace }}
   labels:
     {{- include "flask-voting-app.labels" . | nindent 4 }}
 data:
-  FLASK_APP: {{ .Values.config.flaskApp }}
-  FLASK_ENV: {{ .Values.config.flaskEnv }}
-  REDIS_HOST: {{ .Values.config.redisHost }}
-  REDIS_PORT: {{ .Values.config.redisPort }}
+  FLASK_APP: {{ .Values.config.flaskApp | quote }}
+  FLASK_ENV: {{ .Values.config.flaskEnv | quote }}
+  REDIS_HOST: {{ .Values.config.redisHost | quote }}
+  REDIS_PORT: {{ .Values.config.redisPort | quote }}

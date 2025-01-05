@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Values.flaskApp.name }}
-  namespace: {{ .Values.namespace }}
   labels:
     {{- include "flask-voting-app.labels" . | nindent 4 }}
 spec:
