@@ -66,7 +66,7 @@ This is a simple voting application built with Flask. It allows users to vote fo
 
 ## Running the application in Minikube
 
-1. **Start mMinikube cluster**
+1. **Start Minikube cluster**
     ```sh
     minikube start
     ```
@@ -86,7 +86,7 @@ This is a simple voting application built with Flask. It allows users to vote fo
     kubectl apply -f k8s/dev/deployment.yaml
     kubectl apply -f k8s/dev/service.yaml
     ```
-4. **Get the minikube ip**
+4. **Get the Minikube ip**
     ```sh
     minikube ip
     ```
@@ -106,37 +106,36 @@ This is a simple voting application built with Flask. It allows users to vote fo
 
 ## Running the application using Helm
 
-1. **Start mMinikube cluster**
+1. **Start Minikube cluster**
     ```sh
     minikube start
     ```
 
-2. Creete the namespace if not exist: 
-    ```sh
-    kubectl create namespace dev
-    ```
+2. Navigate to the project root
    
-3. Navigate to the project root
-   
-4. Install the helm chart to create a release `voting-app` in `dev` namespace: 
+3. Install the helm chart to create a release `voting-app` in `dev` namespace: 
     ```sh
-    helm install voting-app helm-charts --values helm-charts/values-dev.yaml -n dev
+    helm install voting-app helm-charts \
+    --values helm-charts/values-dev.yaml -n dev \
+    --create-namespace
     ```
+    It will create the namespace automatically if not exist.
 
-5. **Get the minikube ip**
+4. **Get the minikube ip**
     ```sh
     minikube ip
     ```
 
-6. **Open the application**:
+5. **Open the application**:
     Open your web browser and go to `http://<minikube-ip>:30000`
    
-7. To upgrade the release, run: 
+6. To upgrade the release, run: 
     ```sh
-    helm upgrade voting-app helm-charts --values helm-charts/values-dev.yaml -n dev
+    helm upgrade voting-app helm-charts \
+    --values helm-charts/values-dev.yaml -n dev
     ```
 
-8. To list the installed releases in namespace `dev`, run:
+7. To list the installed releases in namespace `dev`, run:
     ```sh
     helm ls -n dev
     ```
@@ -145,17 +144,17 @@ This is a simple voting application built with Flask. It allows users to vote fo
     helm ls -A
     ```
 
-9. To list all the revisions of a release, run:
+8. To list all the revisions of a release, run:
     ```sh
     helm history voting-app -n dev
     ```
 
-10. If you want to rollback to a previous revision (say `1`), use:
+9. If you want to rollback to a previous revision (say `1`), use:
     ```sh
     helm rollback voting-app 1 -n dev
     ```
 
-11. To uninstall the release, run:
+10. To uninstall the release, run:
     ```sh
     helm uninstall voting-app -n dev
     ```
